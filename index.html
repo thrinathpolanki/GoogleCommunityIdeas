@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Idea Incubator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .form-input {
+            transition: all 0.3s ease;
+            border: 1px solid #D1D5DB;
+        }
+        .form-input:focus {
+            ring: 2px ring-indigo-500;
+            border-color: transparent;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .btn {
+            transition: all 0.3s ease;
+            transform: perspective(1px) translateZ(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+        }
+        .btn-secondary {
+             background: linear-gradient(to right, #10b981, #34d399);
+        }
+        /* Markdown-like styling for Gemini output */
+        #gemini-output h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem; color: #1e3a8a; }
+        #gemini-output h2 { font-size: 1.5rem; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; color: #4f46e5;}
+        #gemini-output h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #111827;}
+        #gemini-output p { margin-bottom: 1rem; line-height: 1.6; color: #374151;}
+        #gemini-output ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; color: #374151;}
+        #gemini-output li { margin-bottom: 0.5rem; }
+        #gemini-output strong { font-weight: 600; color: #111827;}
+        #gemini-output table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        #gemini-output th, #gemini-output td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        #gemini-output th { background-color: #f2f2f2; font-weight: 600; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full max-w-4xl mx-auto">
+        <div id="app-card" class="card p-8 md:p-12">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-block bg-indigo-100 p-3 rounded-full mb-4">
+                    <svg class="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Community Idea Incubator</h1>
+                <p class="text-gray-500 mt-2">Bring your ideas to life. Let's build together.</p>
+            </div>
+
+            <!-- Form Section -->
+            <div id="form-section">
+                <form id="idea-form" class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <input type="text" id="name" name="name" placeholder="Your Name" class="w-full p-3 rounded-lg form-input" required>
+                        <input type="tel" id="mobile" name="mobile" placeholder="Mobile Number" class="w-full p-3 rounded-lg form-input" required pattern="[0-9]{10}" title="Please enter a 10-digit mobile number." maxlength="10">
+                    </div>
+                    <input type="email" id="email" name="email" placeholder="Email Address" class="w-full p-3 rounded-lg form-input" required>
+                    <textarea id="idea" name="idea" placeholder="Describe your brilliant idea..." rows="5" class="w-full p-3 rounded-lg form-input" required></textarea>
+                    <button type="submit" class="w-full btn btn-primary text-white font-bold py-3 px-4 rounded-lg text-lg">
+                        ✨ Turn Idea into Action Plan
+                    </button>
+                </form>
+                 <div id="status-message" class="mt-4 text-center text-sm"></div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading-section" class="text-center py-12 hidden">
+                 <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                 <p class="text-gray-600 font-medium text-lg">Gemini is brainstorming... <br>Crafting your detailed execution plan!</p>
+            </div>
+            
+            <!-- Gemini Output -->
+            <div id="result-section" class="hidden mt-10">
+                <div id="gemini-output" class="p-6 bg-gray-50 rounded-xl border border-gray-200">
+                    <!-- Gemini response will be injected here -->
+                </div>
+                 <button id="send-email-btn" class="w-full mt-6 btn btn-secondary text-white font-bold py-3 px-4 rounded-lg">📧 Send This Plan to My Email</button>
+                 <div id="email-status" class="mt-4 text-center text-sm"></div>
+                 <!-- Publish Button -->
+                 <button id="publish-btn" class="w-full mt-4 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-lg">🚀 Publish & Share Idea</button>
+                 <button id="start-over-btn" class="w-full mt-4 btn btn-primary text-white font-bold py-3 px-4 rounded-lg">Submit Another Idea</button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Publish Modal -->
+    <div id="publish-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center transform transition-all duration-300 scale-95 opacity-0" id="publish-modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Share Your Idea</h2>
+            <p class="text-gray-500 mb-6">Let the community know what you're building!</p>
+            <div class="space-y-4">
+                <a id="share-twitter" href="#" target="_blank" class="block w-full flex items-center justify-center py-3 px-4 rounded-lg text-white font-semibold" style="background-color: #1DA1F2;">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.223.085c.646 1.956 2.523 3.379 4.75 3.419-1.782 1.394-4.04 2.225-6.484 2.225-.422 0-.838-.025-1.247-.074A13.95 13.95 0 007.55 21c9.054 0 14.01-7.502 14.01-14.01 0-.213 0-.425-.015-.635A9.958 9.958 0 0023.953 4.57z"></path></svg>
+                    Share on Twitter
+                </a>
+                <a id="share-linkedin" href="#" target="_blank" class="block w-full flex items-center justify-center py-3 px-4 rounded-lg text-white font-semibold" style="background-color: #0A66C2;">
+                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"></path></svg>
+                    Share on LinkedIn
+                </a>
+                <button id="copy-summary" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg">
+                    📋 Copy Summary
+                </button>
+            </div>
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        </div>
+    </div>
+
+
+    <script>
+        const ideaForm = document.getElementById('idea-form');
+        const formSection = document.getElementById('form-section');
+        const loadingSection = document.getElementById('loading-section');
+        const resultSection = document.getElementById('result-section');
+        const geminiOutput = document.getElementById('gemini-output');
+        const startOverBtn = document.getElementById('start-over-btn');
+        const statusMessage = document.getElementById('status-message');
+        const sendEmailBtn = document.getElementById('send-email-btn');
+        const emailStatus = document.getElementById('email-status');
+        
+        // --- NEW --- Publish Modal Elements
+        const publishBtn = document.getElementById('publish-btn');
+        const publishModal = document.getElementById('publish-modal');
+        const publishModalContent = document.getElementById('publish-modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const shareTwitter = document.getElementById('share-twitter');
+        const shareLinkedin = document.getElementById('share-linkedin');
+        const copySummary = document.getElementById('copy-summary');
+
+        let currentUserEmail = '';
+
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbDTGxQe6C46chzMZAfHSUM-F1M4Xjnrq8rTunWrxVRIRcasFF3VylRLdPEnbgl8OVUA/exec';
+
+        ideaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            formSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+            statusMessage.textContent = '';
+            
+            const formData = new FormData(ideaForm);
+            const ideaData = Object.fromEntries(formData.entries());
+            ideaData.timestamp = new Date().toLocaleString();
+            currentUserEmail = ideaData.email;
+
+            const [sheetResult, planResult] = await Promise.allSettled([
+                saveToGoogleSheet(ideaData),
+                generateExecutionPlan(ideaData.idea)
+            ]);
+
+            loadingSection.classList.add('hidden');
+
+            if (sheetResult.status === 'rejected') {
+                statusMessage.textContent = 'Could not save to Google Sheet. Please check your setup. The plan is still generated below.';
+                statusMessage.classList.add('text-red-500');
+            }
+
+            if (planResult.status === 'fulfilled') {
+                let planHtml = planResult.value;
+                 // Clean up Gemini's response if it includes markdown fences
+                if (planHtml.startsWith('```html')) {
+                    planHtml = planHtml.substring(7, planHtml.length - 3).trim();
+                }
+
+                geminiOutput.innerHTML = planHtml.trim();
+                resultSection.classList.remove('hidden');
+                injectPersonaGenerator(); 
+            } else {
+                 geminiOutput.innerHTML = `<p class="text-red-500"><strong>Error:</strong> Could not generate the execution plan. Please try again later.</p>`;
+                 resultSection.classList.remove('hidden');
+                 console.error("Gemini API Error:", planResult.reason);
+            }
+            document.getElementById('idea-form').classList.add('hidden');
+        });
+
+        startOverBtn.addEventListener('click', () => {
+            resultSection.classList.add('hidden');
+            formSection.classList.remove('hidden');
+            ideaForm.reset();
+            statusMessage.textContent = '';
+            emailStatus.textContent = '';
+            currentUserEmail = '';
+            document.getElementById('idea-form').classList.remove('hidden');
+        });
+
+        sendEmailBtn.addEventListener('click', async () => {
+            sendEmailBtn.disabled = true;
+            emailStatus.textContent = "Sending...";
+            
+            const planContent = geminiOutput.innerHTML;
+
+            const payload = {
+                action: 'sendEmail',
+                email: currentUserEmail,
+                planContent: planContent
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
+                emailStatus.textContent = `Plan sent successfully to ${currentUserEmail}!`;
+                emailStatus.classList.remove('text-red-500');
+                emailStatus.classList.add('text-green-600');
+            } catch (error) {
+                console.error('Error sending email:', error);
+                emailStatus.textContent = 'Failed to send email. Please try again.';
+                emailStatus.classList.remove('text-green-600');
+                emailStatus.classList.add('text-red-500');
+            } finally {
+                sendEmailBtn.disabled = false;
+            }
+        });
+        
+        geminiOutput.addEventListener('click', async (e) => {
+            if (e.target && e.target.id === 'generate-personas-btn') {
+                const button = e.target;
+                const audienceSection = button.closest('.audience-section');
+                const contentClone = audienceSection.cloneNode(true);
+                const buttonInClone = contentClone.querySelector('#generate-personas-btn');
+                if(buttonInClone) buttonInClone.remove();
+                const audienceDescription = contentClone.textContent.trim();
+                
+                if (!audienceDescription) {
+                    audienceSection.innerHTML += `<p class="text-red-500 mt-4">Could not find audience description.</p>`;
+                    return;
+                }
+
+                button.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div> Generating Personas...`;
+                button.disabled = true;
+
+                try {
+                    const personasHtml = await generatePersonas(audienceDescription);
+                    audienceSection.innerHTML = personasHtml;
+                } catch (error) {
+                    audienceSection.innerHTML += `<p class="text-red-500 mt-4">Could not generate personas. Please try again.</p>`;
+                }
+            }
+        });
+
+        function injectPersonaGenerator() {
+            const headings = geminiOutput.querySelectorAll('h2');
+            headings.forEach(h2 => {
+                if (h2.textContent.includes('Target Audience')) {
+                    const parentDiv = document.createElement('div');
+                    parentDiv.className = 'audience-section';
+                    let sibling = h2.nextElementSibling;
+                    while(sibling && sibling.tagName !== 'H2') {
+                        parentDiv.appendChild(sibling.cloneNode(true));
+                        sibling = sibling.nextElementSibling;
+                    }
+                    h2.after(parentDiv);
+                    const personaButton = document.createElement('button');
+                    personaButton.id = 'generate-personas-btn';
+                    personaButton.className = 'mt-4 btn btn-primary text-white font-bold py-2 px-4 rounded-lg text-sm';
+                    personaButton.innerHTML = '✨ Generate Detailed Personas';
+                    parentDiv.appendChild(personaButton);
+                }
+            });
+        }
+        
+        // --- PUBLISH FEATURE ---
+        function generateShareableSummary() {
+            const ideaTitle = geminiOutput.querySelector('h1, h2')?.textContent || "A New Community Idea";
+            const ideaDescription = geminiOutput.querySelector('p')?.textContent || "Check out this execution plan.";
+            return `🚀 Check out this idea: "${ideaTitle.trim()}"\n\n${ideaDescription.substring(0, 150).trim()}...\n\nGenerated with the Community Idea Incubator!`;
+        }
+
+        publishBtn.addEventListener('click', () => {
+            const summary = generateShareableSummary();
+            const ideaTitle = geminiOutput.querySelector('h1, h2')?.textContent || "Community Idea";
+            const url = window.location.href;
+
+            // Twitter
+            shareTwitter.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}`;
+
+            // LinkedIn
+            shareLinkedin.href = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(ideaTitle)}&summary=${encodeURIComponent(summary)}`;
+
+            publishModal.classList.remove('hidden');
+            publishModal.classList.add('flex');
+            setTimeout(() => {
+                publishModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        });
+
+        function closeModal() {
+            publishModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                publishModal.classList.add('hidden');
+                publishModal.classList.remove('flex');
+            }, 300);
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        publishModal.addEventListener('click', (e) => {
+            if (e.target === publishModal) {
+                closeModal();
+            }
+        });
+
+        copySummary.addEventListener('click', () => {
+            const summary = generateShareableSummary();
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = summary;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            copySummary.textContent = '✅ Copied!';
+            setTimeout(() => {
+                copySummary.textContent = '📋 Copy Summary';
+            }, 2000);
+        });
+        // --- END PUBLISH FEATURE ---
+
+        async function saveToGoogleSheet(data) {
+             const payload = { ...data, action: 'saveIdea' };
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
+            } catch (error) {
+                console.error('Could not save to Google Sheet:', error);
+                throw error;
+            }
+        }
+        
+        async function generatePersonas(audienceText) {
+             const systemPrompt = `You are a market research specialist. Your task is to create detailed, realistic user personas based on a target audience description. For the given description, generate 2 distinct personas. The output must be clean HTML that will be injected into an existing div. For each persona, include: A heading like <h3>[Persona Name] - [Archetype/Title]</h3>, a brief bio, an unordered list for 'Goals', an unordered list for 'Frustrations', and a simple table for 'Demographics'. Format the entire output as a single HTML block. Do not include <html>, <body>, or any markdown code fences.`;
+            
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: `The target audience is described as: "${audienceText}"` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+             try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+                if (candidate?.content?.parts?.[0]?.text) {
+                    return candidate.content.parts[0].text;
+                } else {
+                    throw new Error("Invalid response from Gemini API for personas.");
+                }
+            } catch (error) {
+                console.error("Error generating personas:", error);
+                throw error;
+            }
+        }
+
+        async function generateExecutionPlan(ideaText) {
+            const systemPrompt = `You are an expert business consultant and project manager. Your task is to take a user's raw idea and forge it into a comprehensive, actionable execution plan. The output must be detailed, professional, and formatted in clean HTML. The structure should be: 1. Executive Summary, 2. Core Concept & Value Proposition, 3. Target Audience, 4. Monetization Strategy, 5. Marketing & Go-to-Market Plan, 6. Step-by-Step Execution Roadmap (Phased), 7. Potential Risks & Mitigation, 8. Key Success Metrics (KPIs). Do not include any markdown like \`\`\`html. The output must be pure HTML content. Use h2 for main section titles.`;
+            
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: ideaText }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+                if (candidate?.content?.parts?.[0]?.text) {
+                    return candidate.content.parts[0].text;
+                } else {
+                    console.log("Unexpected Gemini API response structure:", result);
+                    throw new Error("Invalid response structure from Gemini API.");
+                }
+            } catch (error) {
+                 console.error("Error generating plan with Gemini:", error);
+                 throw error;
+            }
+        }
+    </script>
+</body>
+</html>
+
