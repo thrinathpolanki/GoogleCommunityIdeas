@@ -133,6 +133,16 @@
 
 
     <script>
+        // --- START: API KEY CONFIGURATION ---
+        // IMPORTANT: You need a Google AI API Key for this application to work.
+        // 1. Get your free key from Google AI Studio: https://aistudio.google.com/app/apikey
+        // 2. Paste your key here, replacing 'PASTE_YOUR_GOOGLE_AI_API_KEY_HERE'.
+        // WARNING: Pasting your API key directly into client-side code is NOT secure for a public website.
+        // Anyone can view your key and use it, which could lead to unexpected charges.
+        // For personal use or a private demo, this is okay. For a public site, use a secure backend proxy.
+        const GEMINI_API_KEY = 'AIzaSyA2s99lz7oXcSeaWiLkHFE-8B9Bs-yssdU';
+        // --- END: API KEY CONFIGURATION ---
+
         const ideaForm = document.getElementById('idea-form');
         const formSection = document.getElementById('form-section');
         const loadingSection = document.getElementById('loading-section');
@@ -158,6 +168,15 @@
 
         ideaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // API Key validation
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GOOGLE_AI_API_KEY_HERE') {
+                statusMessage.textContent = 'Configuration Error: Please add your Google AI API Key in the HTML file.';
+                statusMessage.classList.remove('text-green-600');
+                statusMessage.classList.add('text-red-500', 'font-bold');
+                return; // Stop the function if the key is missing
+            }
+
             formSection.classList.add('hidden');
             loadingSection.classList.remove('hidden');
             statusMessage.textContent = '';
@@ -364,7 +383,7 @@
         async function generatePersonas(audienceText) {
              const systemPrompt = `You are a market research specialist. Your task is to create detailed, realistic user personas based on a target audience description. For the given description, generate 2 distinct personas. The output must be clean HTML that will be injected into an existing div. For each persona, include: A heading like <h3>[Persona Name] - [Archetype/Title]</h3>, a brief bio, an unordered list for 'Goals', an unordered list for 'Frustrations', and a simple table for 'Demographics'. Format the entire output as a single HTML block. Do not include <html>, <body>, or any markdown code fences.`;
             
-            const apiKey = "";
+            const apiKey = GEMINI_API_KEY;
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             const payload = {
@@ -394,7 +413,7 @@
         async function generateExecutionPlan(ideaText) {
             const systemPrompt = `You are an expert business consultant and project manager. Your task is to take a user's raw idea and forge it into a comprehensive, actionable execution plan. The output must be detailed, professional, and formatted in clean HTML. The structure should be: 1. Executive Summary, 2. Core Concept & Value Proposition, 3. Target Audience, 4. Monetization Strategy, 5. Marketing & Go-to-Market Plan, 6. Step-by-Step Execution Roadmap (Phased), 7. Potential Risks & Mitigation, 8. Key Success Metrics (KPIs). Do not include any markdown like \`\`\`html. The output must be pure HTML content. Use h2 for main section titles.`;
             
-            const apiKey = "";
+            const apiKey = GEMINI_API_KEY;
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             const payload = {
@@ -425,4 +444,5 @@
     </script>
 </body>
 </html>
+
 
