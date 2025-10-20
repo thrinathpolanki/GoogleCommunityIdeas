@@ -170,6 +170,8 @@
 
             formSection.classList.add('hidden');
             loadingSection.classList.remove('hidden');
+            resultSection.classList.add('hidden'); // Hide previous results
+            geminiOutput.innerHTML = ''; // Clear previous output
             statusMessage.textContent = '';
             
             const formData = new FormData(ideaForm);
@@ -195,7 +197,18 @@
                 resultSection.classList.remove('hidden');
                 injectPersonaGenerator(); 
             } else {
-                 geminiOutput.innerHTML = `<p class="text-red-500"><strong>Error:</strong> Could not generate the execution plan. ${planResult.reason.message}</p>`;
+                 const errorMessage = planResult.reason.message;
+                 let displayMessage = `<strong>Error:</strong> Could not generate the execution plan. <br><br> <span class="font-mono bg-red-100 p-1 rounded">${errorMessage}</span>`;
+                 
+                 if (errorMessage.includes("Network Error")) {
+                     displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> This usually means the front-end can't reach the backend. Please double-check that your Google Apps Script is deployed with access set to 'Anyone' and that you've copied the correct URL into this HTML file.";
+                 } else if (errorMessage.includes("API key not found")) {
+                     displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> The backend script is reporting that the Gemini API Key is missing. Please follow Part 2, Step 3 of the setup guide to add the `GEMINI_API_KEY` to your Script Properties in the Google Apps Script project.";
+                 } else if (errorMessage.includes("Invalid action specified")) {
+                      displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> The backend received the request but didn't understand the 'action'. This can happen if the script code is out of date. Please re-copy the code from `google_apps_script.gs` into your project and redeploy it.";
+                 }
+
+                 geminiOutput.innerHTML = `<div class="text-red-700 p-4 border-l-4 border-red-500 bg-red-50">${displayMessage}</div>`;
                  resultSection.classList.remove('hidden');
                  console.error("Execution Plan Error:", planResult.reason);
             }
@@ -402,7 +415,13 @@
                 }
             } catch (error) {
                  console.error("Error generating plan with backend:", error);
-                 throw error;
+                 let userFriendlyError = "An unexpected error occurred. Please check the browser console for details.";
+                 if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    userFriendlyError = "Network Error: Could not connect to the backend script.";
+                 } else {
+                    userFriendlyError = error.message;
+                 }
+                 throw new Error(userFriendlyError);
             }
         }
     </script>
