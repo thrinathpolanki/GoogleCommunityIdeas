@@ -133,15 +133,11 @@
 
 
     <script>
-        // --- START: API KEY CONFIGURATION ---
-        // IMPORTANT: You need a Google AI API Key for this application to work.
-        // 1. Get your free key from Google AI Studio: https://aistudio.google.com/app/apikey
-        // 2. Paste your key here, replacing 'PASTE_YOUR_GOOGLE_AI_API_KEY_HERE'.
-        // WARNING: Pasting your API key directly into client-side code is NOT secure for a public website.
-        // Anyone can view your key and use it, which could lead to unexpected charges.
-        // For personal use or a private demo, this is okay. For a public site, use a secure backend proxy.
-        const GEMINI_API_KEY = 'AIzaSyA2s99lz7oXcSeaWiLkHFE-8B9Bs-yssdU';
-        // --- END: API KEY CONFIGURATION --
+        // --- START: BACKEND CONFIGURATION ---
+        // IMPORTANT: You must deploy the Google Apps Script and paste the URL here.
+        // Follow the 'setup_guide.md' file for detailed instructions.
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7IzpBoaAjmD6BbFTMNSKjIsRt2wPBg_UqWLb4zXzhh6AJlUtCQQ0xnaMYSzNyw_Da/exec';
+        // --- END: BACKEND CONFIGURATION ---
 
         const ideaForm = document.getElementById('idea-form');
         const formSection = document.getElementById('form-section');
@@ -153,7 +149,6 @@
         const sendEmailBtn = document.getElementById('send-email-btn');
         const emailStatus = document.getElementById('email-status');
         
-        // --- NEW --- Publish Modal Elements
         const publishBtn = document.getElementById('publish-btn');
         const publishModal = document.getElementById('publish-modal');
         const publishModalContent = document.getElementById('publish-modal-content');
@@ -164,17 +159,13 @@
 
         let currentUserEmail = '';
 
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbDTGxQe6C46chzMZAfHSUM-F1M4Xjnrq8rTunWrxVRIRcasFF3VylRLdPEnbgl8OVUA/exec';
-
         ideaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // API Key validation
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GOOGLE_AI_API_KEY_HERE') {
-                statusMessage.textContent = 'Configuration Error: Please add your Google AI API Key in the HTML file.';
-                statusMessage.classList.remove('text-green-600');
+            if (GOOGLE_SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                statusMessage.textContent = 'Configuration Error: Please set up the backend script and add the URL in index.html.';
                 statusMessage.classList.add('text-red-500', 'font-bold');
-                return; // Stop the function if the key is missing
+                return;
             }
 
             formSection.classList.add('hidden');
@@ -200,18 +191,13 @@
 
             if (planResult.status === 'fulfilled') {
                 let planHtml = planResult.value;
-                 // Clean up Gemini's response if it includes markdown fences
-                if (planHtml.startsWith('```html')) {
-                    planHtml = planHtml.substring(7, planHtml.length - 3).trim();
-                }
-
                 geminiOutput.innerHTML = planHtml.trim();
                 resultSection.classList.remove('hidden');
                 injectPersonaGenerator(); 
             } else {
-                 geminiOutput.innerHTML = `<p class="text-red-500"><strong>Error:</strong> Could not generate the execution plan. Please try again later.</p>`;
+                 geminiOutput.innerHTML = `<p class="text-red-500"><strong>Error:</strong> Could not generate the execution plan. ${planResult.reason.message}</p>`;
                  resultSection.classList.remove('hidden');
-                 console.error("Gemini API Error:", planResult.reason);
+                 console.error("Execution Plan Error:", planResult.reason);
             }
             document.getElementById('idea-form').classList.add('hidden');
         });
@@ -231,21 +217,12 @@
             emailStatus.textContent = "Sending...";
             
             const planContent = geminiOutput.innerHTML;
-
-            const payload = {
-                action: 'sendEmail',
-                email: currentUserEmail,
-                planContent: planContent
-            };
+            const payload = { action: 'sendEmail', email: currentUserEmail, planContent: planContent };
 
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
-                    redirect: 'follow'
                 });
                 emailStatus.textContent = `Plan sent successfully to ${currentUserEmail}!`;
                 emailStatus.classList.remove('text-red-500');
@@ -281,7 +258,7 @@
                     const personasHtml = await generatePersonas(audienceDescription);
                     audienceSection.innerHTML = personasHtml;
                 } catch (error) {
-                    audienceSection.innerHTML += `<p class="text-red-500 mt-4">Could not generate personas. Please try again.</p>`;
+                    audienceSection.innerHTML += `<p class="text-red-500 mt-4">Could not generate personas: ${error.message}</p>`;
                 }
             }
         });
@@ -292,17 +269,31 @@
                 if (h2.textContent.includes('Target Audience')) {
                     const parentDiv = document.createElement('div');
                     parentDiv.className = 'audience-section';
+                    
                     let sibling = h2.nextElementSibling;
+                    let audienceContentFound = false;
                     while(sibling && sibling.tagName !== 'H2') {
                         parentDiv.appendChild(sibling.cloneNode(true));
                         sibling = sibling.nextElementSibling;
+                        audienceContentFound = true;
                     }
-                    h2.after(parentDiv);
-                    const personaButton = document.createElement('button');
-                    personaButton.id = 'generate-personas-btn';
-                    personaButton.className = 'mt-4 btn btn-primary text-white font-bold py-2 px-4 rounded-lg text-sm';
-                    personaButton.innerHTML = '✨ Generate Detailed Personas';
-                    parentDiv.appendChild(personaButton);
+
+                    if (audienceContentFound) {
+                        // This removes the original audience content which is now inside parentDiv
+                        let contentToRemove = h2.nextElementSibling;
+                        while(contentToRemove && contentToRemove.tagName !== 'H2') {
+                            let next = contentToRemove.nextElementSibling;
+                            contentToRemove.remove();
+                            contentToRemove = next;
+                        }
+
+                        h2.after(parentDiv);
+                        const personaButton = document.createElement('button');
+                        personaButton.id = 'generate-personas-btn';
+                        personaButton.className = 'mt-4 btn btn-primary text-white font-bold py-2 px-4 rounded-lg text-sm';
+                        personaButton.innerHTML = '✨ Generate Detailed Personas';
+                        parentDiv.appendChild(personaButton);
+                    }
                 }
             });
         }
@@ -319,10 +310,7 @@
             const ideaTitle = geminiOutput.querySelector('h1, h2')?.textContent || "Community Idea";
             const url = window.location.href;
 
-            // Twitter
             shareTwitter.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}`;
-
-            // LinkedIn
             shareLinkedin.href = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(ideaTitle)}&summary=${encodeURIComponent(summary)}`;
 
             publishModal.classList.remove('hidden');
@@ -368,11 +356,7 @@
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
-                    redirect: 'follow'
                 });
             } catch (error) {
                 console.error('Could not save to Google Sheet:', error);
@@ -380,29 +364,20 @@
             }
         }
         
-        async function generatePersonas(audienceText) {
-             const systemPrompt = `You are a market research specialist. Your task is to create detailed, realistic user personas based on a target audience description. For the given description, generate 2 distinct personas. The output must be clean HTML that will be injected into an existing div. For each persona, include: A heading like <h3>[Persona Name] - [Archetype/Title]</h3>, a brief bio, an unordered list for 'Goals', an unordered list for 'Frustrations', and a simple table for 'Demographics'. Format the entire output as a single HTML block. Do not include <html>, <body>, or any markdown code fences.`;
-            
-            const apiKey = GEMINI_API_KEY;
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: `The target audience is described as: "${audienceText}"` }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            };
-             try {
-                const response = await fetch(apiUrl, {
+       async function generatePersonas(audienceText) {
+            const payload = { action: 'generatePersonas', audience: audienceText };
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                if (!response.ok) throw new Error(`Backend call failed: ${response.status}`);
                 const result = await response.json();
-                const candidate = result.candidates?.[0];
-                if (candidate?.content?.parts?.[0]?.text) {
-                    return candidate.content.parts[0].text;
+                if (result.success) {
+                    return result.html;
                 } else {
-                    throw new Error("Invalid response from Gemini API for personas.");
+                    throw new Error(result.error || "Unknown error from backend.");
                 }
             } catch (error) {
                 console.error("Error generating personas:", error);
@@ -411,38 +386,26 @@
         }
 
         async function generateExecutionPlan(ideaText) {
-            const systemPrompt = `You are an expert business consultant and project manager. Your task is to take a user's raw idea and forge it into a comprehensive, actionable execution plan. The output must be detailed, professional, and formatted in clean HTML. The structure should be: 1. Executive Summary, 2. Core Concept & Value Proposition, 3. Target Audience, 4. Monetization Strategy, 5. Marketing & Go-to-Market Plan, 6. Step-by-Step Execution Roadmap (Phased), 7. Potential Risks & Mitigation, 8. Key Success Metrics (KPIs). Do not include any markdown like \`\`\`html. The output must be pure HTML content. Use h2 for main section titles.`;
-            
-            const apiKey = GEMINI_API_KEY;
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: ideaText }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            };
-            
+            const payload = { action: 'generatePlan', idea: ideaText };
             try {
-                const response = await fetch(apiUrl, {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                if (!response.ok) throw new Error(`Backend call failed with status: ${response.status}`);
                 const result = await response.json();
-                const candidate = result.candidates?.[0];
-                if (candidate?.content?.parts?.[0]?.text) {
-                    return candidate.content.parts[0].text;
+                if (result.success) {
+                    return result.html;
                 } else {
-                    console.log("Unexpected Gemini API response structure:", result);
-                    throw new Error("Invalid response structure from Gemini API.");
+                    throw new Error(result.error || "Unknown error from backend.");
                 }
             } catch (error) {
-                 console.error("Error generating plan with Gemini:", error);
+                 console.error("Error generating plan with backend:", error);
                  throw error;
             }
         }
     </script>
 </body>
 </html>
-
 
