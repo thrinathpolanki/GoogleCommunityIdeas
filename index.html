@@ -71,6 +71,8 @@
                 </div>
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Community Idea Incubator</h1>
                 <p class="text-gray-500 mt-2">Bring your ideas to life. Let's build together.</p>
+                <!-- Connection Status Indicator -->
+                <div id="connection-status" class="mt-4 text-center p-3 rounded-lg text-sm font-semibold"></div>
             </div>
 
             <!-- Form Section -->
@@ -134,9 +136,9 @@
 
     <script>
         // --- START: BACKEND CONFIGURATION ---
-        // IMPORTANT: You must deploy the Google Apps Script and paste the URL here.
-        // Follow the 'setup_guide.md' file for detailed instructions.
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7IzpBoaAjmD6BbFTMNSKjIsRt2wPBg_UqWLb4zXzhh6AJlUtCQQ0xnaMYSzNyw_Da/exec';
+        // ❗️ IMPORTANT: You MUST replace this placeholder with your own Google Apps Script URL.
+        // Follow the 'setup_guide.md' file to get your URL.
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLHk-5ncNPmJK4EbJx8MR1_0DsEItHGt9zdBL2hks4Jxl8gJj6ePnlhAYaayylwiNl/exec';
         // --- END: BACKEND CONFIGURATION ---
 
         const ideaForm = document.getElementById('idea-form');
@@ -156,22 +158,61 @@
         const shareTwitter = document.getElementById('share-twitter');
         const shareLinkedin = document.getElementById('share-linkedin');
         const copySummary = document.getElementById('copy-summary');
-
+        
+        const connectionStatus = document.getElementById('connection-status');
         let currentUserEmail = '';
 
-        ideaForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (GOOGLE_SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                statusMessage.textContent = 'Configuration Error: Please set up the backend script and add the URL in index.html.';
-                statusMessage.classList.add('text-red-500', 'font-bold');
+        // Automatic Backend Connection Test on page load
+        window.addEventListener('load', testBackendConnection);
+
+        async function testBackendConnection() {
+            const submitButton = ideaForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+            if (GOOGLE_SCRIPT_URL.includes('PASTE_YOUR_GEMINI_API_KEY')) {
+                connectionStatus.innerHTML = '⚠️ Configuration needed. Please follow the setup guide to deploy your backend and add the URL.';
+                connectionStatus.className = 'mt-4 text-center p-3 rounded-lg text-sm font-semibold bg-yellow-100 text-yellow-800';
                 return;
             }
 
+            connectionStatus.innerHTML = 'Connecting to backend...';
+            connectionStatus.className = 'mt-4 text-center p-3 rounded-lg text-sm font-semibold bg-blue-100 text-blue-800';
+            
+            try {
+                // Use 'testConnection' action
+                const payload = { action: 'testConnection' };
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' }, // Use text/plain for cross-origin Apps Script
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
+
+                if (!response.ok) throw new Error(`Server responded with status: ${response.status}. This can happen during deployment. Please wait a minute and refresh.`);
+
+                const result = await response.json();
+                if (result.success) {
+                    connectionStatus.innerHTML = '✅ Backend connection successful. Ready for your ideas!';
+                    connectionStatus.className = 'mt-4 text-center p-3 rounded-lg text-sm font-semibold bg-green-100 text-green-800';
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    throw new Error(result.error || 'Backend test failed. Check script logs.');
+                }
+            } catch (error) {
+                console.error('Backend Connection Test Failed:', error);
+                connectionStatus.innerHTML = `❌ <b>Backend Connection Failed.</b> Please carefully check the following and then re-deploy your script: <br> 1. Did you copy the correct Web App URL? <br> 2. Did you set "Who has access" to "Anyone" during deployment? <br> <small class="font-mono">Error: ${error.message}</small>`;
+                connectionStatus.className = 'mt-4 text-center p-3 rounded-lg text-sm font-semibold bg-red-100 text-red-800 text-left';
+            }
+        }
+
+        ideaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             formSection.classList.add('hidden');
             loadingSection.classList.remove('hidden');
-            resultSection.classList.add('hidden'); // Hide previous results
-            geminiOutput.innerHTML = ''; // Clear previous output
+            resultSection.classList.add('hidden');
+            geminiOutput.innerHTML = '';
             statusMessage.textContent = '';
             
             const formData = new FormData(ideaForm);
@@ -179,6 +220,7 @@
             ideaData.timestamp = new Date().toLocaleString();
             currentUserEmail = ideaData.email;
 
+            // Run requests in parallel
             const [sheetResult, planResult] = await Promise.allSettled([
                 saveToGoogleSheet(ideaData),
                 generateExecutionPlan(ideaData.idea)
@@ -193,22 +235,23 @@
 
             if (planResult.status === 'fulfilled') {
                 let planHtml = planResult.value;
+                if (planHtml.startsWith('```html')) {
+                    planHtml = planHtml.substring(7, planHtml.length - 3).trim();
+                }
                 geminiOutput.innerHTML = planHtml.trim();
                 resultSection.classList.remove('hidden');
                 injectPersonaGenerator(); 
             } else {
                  const errorMessage = planResult.reason.message;
-                 let displayMessage = `<strong>Error:</strong> Could not generate the execution plan. <br><br> <span class="font-mono bg-red-100 p-1 rounded">${errorMessage}</span>`;
+                 let displayMessage = `<strong>Error:</strong> Could not generate the execution plan.`;
                  
-                 if (errorMessage.includes("Network Error")) {
-                     displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> This usually means the front-end can't reach the backend. Please double-check that your Google Apps Script is deployed with access set to 'Anyone' and that you've copied the correct URL into this HTML file.";
-                 } else if (errorMessage.includes("API key not found")) {
-                     displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> The backend script is reporting that the Gemini API Key is missing. Please follow Part 2, Step 3 of the setup guide to add the `GEMINI_API_KEY` to your Script Properties in the Google Apps Script project.";
-                 } else if (errorMessage.includes("Invalid action specified")) {
-                      displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> The backend received the request but didn't understand the 'action'. This can happen if the script code is out of date. Please re-copy the code from `google_apps_script.gs` into your project and redeploy it.";
+                 if (errorMessage.includes("API key not found")) {
+                     displayMessage += "<br><br><strong>Troubleshooting Tip:</strong> The backend is working, but the Gemini API Key is missing! Please follow Part 2, Step 3 of the setup guide to add the `GEMINI_API_KEY` to your Script Properties.";
+                 } else {
+                    displayMessage += "<br><br>An unexpected error occurred. Please check the Execution Logs in your Google Apps Script project for more details.";
                  }
 
-                 geminiOutput.innerHTML = `<div class="text-red-700 p-4 border-l-4 border-red-500 bg-red-50">${displayMessage}</div>`;
+                 geminiOutput.innerHTML = `<div class="text-red-700 p-4 border-l-4 border-red-500 bg-red-50">${displayMessage}<br><br><span class="font-mono bg-red-100 p-1 rounded">${errorMessage}</span></div>`;
                  resultSection.classList.remove('hidden');
                  console.error("Execution Plan Error:", planResult.reason);
             }
@@ -233,9 +276,12 @@
             const payload = { action: 'sendEmail', email: currentUserEmail, planContent: planContent };
 
             try {
+                // Use the backend script for sending email
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload),
+                    redirect: 'follow'
                 });
                 emailStatus.textContent = `Plan sent successfully to ${currentUserEmail}!`;
                 emailStatus.classList.remove('text-red-500');
@@ -254,6 +300,7 @@
             if (e.target && e.target.id === 'generate-personas-btn') {
                 const button = e.target;
                 const audienceSection = button.closest('.audience-section');
+                // Clone the section to get text content without the button
                 const contentClone = audienceSection.cloneNode(true);
                 const buttonInClone = contentClone.querySelector('#generate-personas-btn');
                 if(buttonInClone) buttonInClone.remove();
@@ -292,7 +339,7 @@
                     }
 
                     if (audienceContentFound) {
-                        // This removes the original audience content which is now inside parentDiv
+                        // Remove original nodes that were copied
                         let contentToRemove = h2.nextElementSibling;
                         while(contentToRemove && contentToRemove.tagName !== 'H2') {
                             let next = contentToRemove.nextElementSibling;
@@ -311,7 +358,6 @@
             });
         }
         
-        // --- PUBLISH FEATURE ---
         function generateShareableSummary() {
             const ideaTitle = geminiOutput.querySelector('h1, h2')?.textContent || "A New Community Idea";
             const ideaDescription = geminiOutput.querySelector('p')?.textContent || "Check out this execution plan.";
@@ -362,27 +408,30 @@
                 copySummary.textContent = '📋 Copy Summary';
             }, 2000);
         });
-        // --- END PUBLISH FEATURE ---
 
         async function saveToGoogleSheet(data) {
              const payload = { ...data, action: 'saveIdea' };
             try {
+                // Use the backend script
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload),
+                    redirect: 'follow'
                 });
             } catch (error) {
                 console.error('Could not save to Google Sheet:', error);
-                throw error;
+                throw error; // Let the caller handle the UI update
             }
         }
         
        async function generatePersonas(audienceText) {
+            // This function now calls our backend script
             const payload = { action: 'generatePersonas', audience: audienceText };
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) throw new Error(`Backend call failed: ${response.status}`);
@@ -399,11 +448,12 @@
         }
 
         async function generateExecutionPlan(ideaText) {
+            // This function now calls our backend script
             const payload = { action: 'generatePlan', idea: ideaText };
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) throw new Error(`Backend call failed with status: ${response.status}`);
